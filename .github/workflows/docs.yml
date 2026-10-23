@@ -27,7 +27,7 @@ jobs:
           using Pkg
           Pkg.develop(PackageSpec(path=pwd()))
           Pkg.instantiate()
-          include("docs/make.jl")
+          include(joinpath(pwd(), "docs", "make.jl"))
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

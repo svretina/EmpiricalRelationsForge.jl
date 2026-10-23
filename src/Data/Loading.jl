@@ -22,7 +22,10 @@ function RegressionDataset(
     eos_id::Union{Nothing,Symbol}=nothing,
     simulation_id::Union{Nothing,Symbol}=nothing,
     source_paper::Union{Nothing,Symbol}=nothing,
+    observation_kind::Union{Nothing,Symbol}=nothing,
+    include_kinds=(:measured,),
     uncertainty::Union{Nothing,Symbol}=nothing,
+    uncertainty_kind::Symbol=:unspecified,
     weight::Union{Nothing,Symbol}=nothing,
     dropmissing::Bool=true,
 )
@@ -33,6 +36,9 @@ function RegressionDataset(
     n = length(getproperty(columns, target))
     selected = vcat(features, [target])
     mask = trues(n)
+    kinds = isnothing(observation_kind) ? fill(:measured, n) :
+            Symbol.(_column(columns, observation_kind, true, nothing))
+    mask .&= in.(kinds, Ref(Set(Symbol.(include_kinds))))
     if dropmissing
         for name in selected
             mask .&= .!ismissing.(getproperty(columns, name))
@@ -52,7 +58,7 @@ function RegressionDataset(
         eos_ids=optional(eos_id, fill(missing, length(indices))),
         simulation_ids=optional(simulation_id, fill(missing, length(indices))),
         source_papers=optional(source_paper, fill(missing, length(indices))),
-        uncertainties, weights,
+        observation_kinds=kinds[indices], uncertainties, uncertainty_kind, weights,
     )
 end
 

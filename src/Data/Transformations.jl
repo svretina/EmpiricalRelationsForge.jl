@@ -21,7 +21,9 @@ function transform_features(dataset::RegressionDataset, transform::Standardizer)
         X, dataset.y; features=dataset.feature_names, target=dataset.target_name,
         units=dataset.units, row_ids=dataset.row_ids, eos_ids=dataset.eos_ids,
         simulation_ids=dataset.simulation_ids, source_papers=dataset.source_papers,
-        uncertainties=dataset.uncertainties, weights=dataset.weights,
+        observation_kinds=dataset.observation_kinds,
+        uncertainties=dataset.uncertainties, uncertainty_kind=dataset.uncertainty_kind,
+        weights=dataset.weights,
         transformations=vcat(dataset.transformations, [record]),
     )
 end

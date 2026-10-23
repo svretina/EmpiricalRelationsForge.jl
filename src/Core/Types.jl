@@ -22,7 +22,9 @@ struct RegressionDataset{T<:AbstractFloat}
     eos_ids::Vector{Any}
     simulation_ids::Vector{Any}
     source_papers::Vector{Any}
+    observation_kinds::Vector{Symbol}
     uncertainties::Union{Nothing,Vector{T}}
+    uncertainty_kind::Symbol
     weights::Union{Nothing,Vector{T}}
     transformations::Vector{TransformationRecord}
 end
@@ -40,7 +42,9 @@ function RegressionDataset(
     eos_ids=fill(missing, size(X, 1)),
     simulation_ids=fill(missing, size(X, 1)),
     source_papers=fill(missing, size(X, 1)),
+    observation_kinds=fill(:measured, size(X, 1)),
     uncertainties=nothing,
+    uncertainty_kind::Symbol=:unspecified,
     weights=nothing,
     transformations=TransformationRecord[],
 )
@@ -49,8 +53,9 @@ function RegressionDataset(
         Matrix{T}(X), Vector{T}(y), Symbol.(features), Symbol(target),
         Dict{Symbol,String}(Symbol(k) => string(v) for (k, v) in pairs(units)),
         Any[row_ids...], Any[eos_ids...], Any[simulation_ids...],
-        Any[source_papers...],
+        Any[source_papers...], Symbol[observation_kinds...],
         isnothing(uncertainties) ? nothing : Vector{T}(uncertainties),
+        uncertainty_kind,
         isnothing(weights) ? nothing : Vector{T}(weights),
         collect(transformations),
     )
@@ -69,7 +74,9 @@ function subset(dataset::RegressionDataset, indices::AbstractVector{<:Integer})
         eos_ids=dataset.eos_ids[indices],
         simulation_ids=dataset.simulation_ids[indices],
         source_papers=dataset.source_papers[indices],
+        observation_kinds=dataset.observation_kinds[indices],
         uncertainties=isnothing(dataset.uncertainties) ? nothing : dataset.uncertainties[indices],
+        uncertainty_kind=dataset.uncertainty_kind,
         weights=isnothing(dataset.weights) ? nothing : dataset.weights[indices],
         transformations=dataset.transformations,
     )

@@ -5,9 +5,9 @@ eventually fitting scientific empirical relations. It complements
 EmpiricalRelations.jl, which remains the catalogue of published relations and
 their evidence.
 
-The current initialization milestone implements the scientific dataset and
-leakage-safe splitting foundations. Regression and symbolic-discovery APIs are
-intentionally deferred.
+The package implements scientific datasets, linear and polynomial regression,
+named basis functions, nonlinear least squares, symbolic discovery, metrics,
+and leakage-safe grouped validation.
 
 ```julia
 using DataFrames, EmpiricalRelationsForge, Random
@@ -30,7 +30,12 @@ dataset = RegressionDataset(
 )
 
 folds = leave_one_group_out(dataset; by=:eos)
+
+model = fit(dataset, PolynomialRegression(degree=2))
+report = validate(PolynomialRegression(degree=2), dataset;
+                  strategy=LeaveOneEOSOut())
 ```
 
-Julia 1.10 or later is supported. See the documentation for architecture and
-scientific conventions.
+Julia 1.10 or later is supported. The documentation covers the mathematical
+objectives, weighting conventions, target transformations, numerical backends,
+validation methodology, scientific conventions, and reproducibility limits.

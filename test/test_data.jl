@@ -25,6 +25,20 @@
     @test_throws ArgumentError RegressionDataset(duplicate_ids; target=:y, features=[:x], row_id=:id)
 end
 
+@testset "measurement provenance and dependency checks" begin
+    table = DataFrame(id=1:3, x=1.0:3.0, y=2.0:4.0,
+                      kind=[:measured, :predicted, :unreviewed], simulation=[:a, :a, :b])
+    measured = RegressionDataset(table; target=:y, features=[:x], row_id=:id,
+                                 simulation_id=:simulation, observation_kind=:kind)
+    @test length(measured) == 1
+    all_data = RegressionDataset(table; target=:y, features=[:x], row_id=:id,
+                                 simulation_id=:simulation, observation_kind=:kind,
+                                 include_kinds=(:measured, :predicted, :unreviewed))
+    @test all_data.observation_kinds == [:measured, :predicted, :unreviewed]
+    @test duplicate_identifiers(all_data) == Dict(:a => [1, 2])
+    @test !isempty(physical_dependency_warnings([:mass_1, :mass_2, :M_chirp]))
+end
+
 @testset "provider boundary" begin
     @test_throws ArgumentError load_dataset(:not_a_frequency)
     @test_throws ArgumentError load_dataset(:f_peak; features=[:mass])

@@ -1,0 +1,16 @@
+name = "Vretinaris2020Benchmark"
+uuid = "59d529fc-5945-480c-8d3c-f65d77362dc5"
+version = "0.1.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+EmpiricalRelations = "e5ad9d44-c6ae-417e-b6bf-676d2331d8dc"
+EmpiricalRelationsForge = "e9dd7718-9e50-4408-8d7e-593a1f0092d9"
+
+[compat]
+CSV = "0.10"
+DataFrames = "1"
+EmpiricalRelations = "0.1"
+EmpiricalRelationsForge = "0.1"
+julia = "1.10"

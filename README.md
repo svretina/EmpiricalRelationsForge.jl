@@ -1,5 +1,8 @@
 # EmpiricalRelationsForge.jl
 
+[![CI](https://github.com/svretina/EmpiricalRelationsForge.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/svretina/EmpiricalRelationsForge.jl/actions/workflows/CI.yml)
+[![Documentation](https://github.com/svretina/EmpiricalRelationsForge.jl/actions/workflows/docs.yml/badge.svg)](https://svretina.github.io/EmpiricalRelationsForge.jl/)
+
 EmpiricalRelationsForge.jl is a Julia package for preparing, validating, and
 eventually fitting scientific empirical relations. It complements
 EmpiricalRelations.jl, which remains the catalogue of published relations and

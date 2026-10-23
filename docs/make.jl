@@ -12,6 +12,7 @@ makedocs(
         "Regression theory" => "regression.md",
         "Nonlinear fitting" => "nonlinear.md",
         "Symbolic discovery" => "symbolic.md",
+        "Vretinaris2020 benchmark" => "vretinaris2020.md",
         "Validation and metrics" => "validation.md",
         "Scientific conventions" => "scientific_conventions.md",
         "Backend decision" => "backend_decision.md",
@@ -21,10 +22,4 @@ makedocs(
     ],
     checkdocs=:exports,
     remotes=nothing,
-)
-
-deploydocs(
-    repo="github.com/svretina/EmpiricalRelationsForge.jl.git",
-    devbranch="master",
-    push_preview=true,
 )

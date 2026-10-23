@@ -1,5 +1,6 @@
 /Manifest.toml
 /docs/build/
+/benchmarks/vretinaris2020/Manifest.toml
 /test/outputs/
 *.jl.cov
 *.jl.*.cov

@@ -1,5 +1,15 @@
 # Getting started
 
+Install the package directly from its repository:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/svretina/EmpiricalRelationsForge.jl")
+```
+
+The following example constructs a provenance-aware BNS-like dataset, fits a named
+physical basis, and evaluates it with complete EOS groups held out in turn.
+
 ```julia
 using DataFrames
 using EmpiricalRelationsForge
@@ -40,3 +50,18 @@ report = validate(
 
 The last call refits both preprocessing and coefficients once per held-out EOS.
 It does not reuse the full-data model.
+
+Inspect the complete out-of-fold record with:
+
+```julia
+report.aggregate_metrics
+report.fold_metrics
+report.predictions
+report.observed
+report.row_ids
+report.group_metrics
+```
+
+Continue with the [Capability cookbook](@ref) for examples of polynomial and nonlinear
+fitting, symbolic discovery, complete discovery validation, uncertainty estimation,
+physical screening, serialization, published benchmarks, and candidate export.

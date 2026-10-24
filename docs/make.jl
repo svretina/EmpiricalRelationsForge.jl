@@ -8,6 +8,7 @@ makedocs(
     pages=[
         "Home" => "index.md",
         "Getting started" => "getting_started.md",
+        "Capability cookbook" => "capability_cookbook.md",
         "Scientific data" => "data.md",
         "Regression theory" => "regression.md",
         "Nonlinear fitting" => "nonlinear.md",

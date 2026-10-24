@@ -102,6 +102,11 @@ end
     candidate = symbolic_candidate("1.0/Lambda_tilde", [:Lambda_tilde], :f_peak)
     check = check_dimensions(candidate)
     @test check.valid # the fitted coefficient may carry the required frequency dimension
+    candidate_data = RegressionDataset(reshape([100.0, 200.0, 300.0, 400.0], :, 1),
+        [0.01, 0.005, 1 / 300, 0.0025]; features=[:Lambda_tilde], target=:f_peak)
+    validity = expression_validity(candidate, candidate_data)
+    @test validity.valid
+    @test validity.finite_count == length(candidate_data)
 end
 
 @testset "serialization, equivalence, and candidate export" begin

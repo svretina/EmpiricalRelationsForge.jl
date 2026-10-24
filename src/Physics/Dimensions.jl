@@ -162,9 +162,9 @@ end
 function expression_validity(candidate::SymbolicCandidate, dataset::RegressionDataset)
     try
         values = predict(candidate, dataset)
-        count = count(isfinite, values)
-        ExpressionValidity(count == length(values), count, length(values),
-                           count == length(values) ? "ok" : "non-finite predictions")
+        finite_count = count(isfinite, values)
+        ExpressionValidity(finite_count == length(values), finite_count, length(values),
+                           finite_count == length(values) ? "ok" : "non-finite predictions")
     catch error
         ExpressionValidity(false, 0, length(dataset), sprint(showerror, error))
     end

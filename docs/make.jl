@@ -12,6 +12,7 @@ makedocs(
         "Regression theory" => "regression.md",
         "Nonlinear fitting" => "nonlinear.md",
         "Symbolic discovery" => "symbolic.md",
+        "Relation discovery" => "discovery.md",
         "Structure refitting" => "refinement.md",
         "Model comparison" => "comparison.md",
         "Uncertainty" => "uncertainty.md",

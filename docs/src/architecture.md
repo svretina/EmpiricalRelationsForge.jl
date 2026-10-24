@@ -1,5 +1,11 @@
 # Architecture
 
+`RelationDiscoveryProblem` is the target-independent orchestration layer. It
+enumerates explanatory-variable subsets and model families, delegates coefficient
+estimation to the regression layer, and records rather than dictates the selected
+validation strategy. EOS grouping is one possible validation question, not an
+architectural assumption.
+
 `RegressionDataset` fixes the internal numerical convention to observations by
 features and keeps row, EOS, simulation, paper, observation class, unit,
 uncertainty, weighting, and transformation metadata beside the numbers.

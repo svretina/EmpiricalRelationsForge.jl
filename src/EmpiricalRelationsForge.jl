@@ -32,6 +32,9 @@ include("Physics/Dimensions.jl")
 include("Results/Serialization.jl")
 include("Symbolic/Equivalence.jl")
 include("Integration/Candidates.jl")
+include("Discovery/Problems.jl")
+include("Discovery/Search.jl")
+include("Results/DiscoverySerialization.jl")
 
 export RegressionDataset, TransformationRecord, Standardizer
 export load_dataset, fit_standardizer, transform_features, subset
@@ -44,7 +47,7 @@ export PowerProductTerm, BasisSet, LinearBasisRegression, FittedBasisModel
 export NonlinearModelSpec, FittedNonlinearModel
 export fit, predict, formula, coefficients
 export MetricReport, metrics, grouped_metrics
-export AbstractValidationStrategy, RandomHoldout, KFold, GroupedKFold, LeaveOneEOSOut
+export AbstractValidationStrategy, RandomHoldout, KFold, GroupedKFold, LeaveOneEOSOut, LeaveOneGroupOut
 export ValidationReport, validate
 export SymbolicSearch, SymbolicCandidate, SymbolicSearchResult
 export discover, leaderboard, best_model
@@ -61,5 +64,10 @@ export ExpressionValidity, expression_validity
 export save_model, load_model, dataset_fingerprint
 export EquivalenceAssessment, equivalence, structural_fingerprint, deduplicate_candidates
 export PublishedPredictor, published_predictor, CandidateExport, export_candidate
+export VariableDescriptor, FeatureTransformation, RelationDiscoveryProblem
+export PolynomialSearch, RelationCandidate, CandidateEvaluation, RelationDiscoveryResult
+export DiscoveryValidationReport, discover_relations, validate_discovery
+export pareto_frontier, filter_candidates
+export save_discovery, load_discovery
 
 end

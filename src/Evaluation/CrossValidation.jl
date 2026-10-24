@@ -19,6 +19,16 @@ GroupedKFold(; k::Integer=5, by::Symbol=:eos, seed::Integer=0) = GroupedKFold(In
 
 struct LeaveOneEOSOut <: AbstractValidationStrategy end
 
+"""Hold out each EOS, simulation family, or source paper in turn."""
+struct LeaveOneGroupOut <: AbstractValidationStrategy
+    by::Symbol
+    function LeaveOneGroupOut(; by::Symbol=:eos)
+        by in (:eos, :simulation, :source_paper) || throw(ArgumentError(
+            "grouping must be :eos, :simulation, or :source_paper"))
+        new(by)
+    end
+end
+
 struct ValidationReport{T<:AbstractFloat,S<:AbstractValidationStrategy}
     strategy::S
     folds::Vector{DataSplit}
@@ -46,6 +56,7 @@ end
 _splits(strategy::GroupedKFold, dataset) = grouped_kfold(
     dataset; by=strategy.by, k=strategy.k, rng=MersenneTwister(strategy.seed))
 _splits(::LeaveOneEOSOut, dataset) = leave_one_group_out(dataset; by=:eos)
+_splits(strategy::LeaveOneGroupOut, dataset) = leave_one_group_out(dataset; by=strategy.by)
 
 function validate(method::AbstractRegressionMethod, dataset::RegressionDataset;
                   strategy::AbstractValidationStrategy=LeaveOneEOSOut())

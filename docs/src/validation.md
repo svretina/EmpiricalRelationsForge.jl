@@ -33,13 +33,16 @@ such values by 1000 for presentation in Hz.
 - `KFold` provides reproducibly shuffled observation-level folds.
 - `GroupedKFold` partitions EOS, simulation, or source-paper identifiers.
 - `LeaveOneEOSOut` holds out each EOS in turn.
+- `LeaveOneGroupOut(by=:eos)` holds out each EOS, simulation family, or source
+  paper in turn, according to `by`.
 
 Grouped strategies reject missing group identifiers and ensure that no group
 crosses a train/test boundary. A `ValidationReport` stores exact fold indices,
 fold metrics, aggregate out-of-fold metrics, predictions, observations, row
 IDs, and per-EOS residual summaries.
 
-For quasi-universal BNS relations, leave-one-EOS-out validation is preferred
-over random splitting because nearby configurations from one EOS are strongly
-correlated. Resolution variants should additionally be grouped by simulation
-family when that identifier is available.
+The strategy must match the scientific generalization question. For a
+quasi-universal BNS relation, leave-one-EOS-out validation tests transfer to an
+unseen EOS because nearby configurations from one EOS are strongly correlated.
+For other objectives, observation-level or simulation-family partitions may be
+the relevant test; EOS grouping is not imposed as a universal default.

@@ -119,12 +119,31 @@ function refit(candidate::SymbolicCandidate, dataset::RegressionDataset;
                algorithm=nothing,
                solver_options::NamedTuple=(;))
     dataset.feature_names == candidate.feature_names || throw(ArgumentError("dataset feature order does not match candidate"))
-    method in (:auto, :linear, :nonlinear) || throw(ArgumentError("method must be :auto, :linear, or :nonlinear"))
+    method in (:auto, :linear, :nonlinear, :fixed) || throw(ArgumentError(
+        "method must be :auto, :linear, :nonlinear, or :fixed"))
     solver in (:qr, :svd) || throw(ArgumentError("solver must be :qr or :svd"))
     loss_space in (:original, :transformed) || throw(ArgumentError("loss_space must be :original or :transformed"))
     _check_weighting(weighting)
     original = parameter_vector(candidate)
-    isempty(original) && throw(ArgumentError("symbolic candidate has no free scalar constants"))
+    fingerprint = model_structure(candidate).fingerprint
+    if isempty(original)
+        objective = try
+            sum(abs2, _symbolic_residuals(candidate, original, dataset, weighting,
+                target_transform, loss_space))
+        catch
+            Inf
+        end
+        valid = isfinite(objective)
+        diagnostics = RefitDiagnostics(valid,
+            valid ? "constant-free structure; no coefficients to refit" : "invalid predictions",
+            0, NaN, Symbol[])
+        return RefittedSymbolicModel(candidate, candidate, Float64[], Float64[],
+            objective, objective, :fixed, valid ? :success : :failed, "none", weighting,
+            target_transform, loss_space, nothing, nothing, diagnostics, fingerprint,
+            copy(dataset.row_ids))
+    end
+    method == :fixed && throw(ArgumentError(
+        "method=:fixed is only valid for a constant-free symbolic structure"))
     linear = _linear_in_symbolic_parameters(candidate)
     method == :linear && !linear && throw(ArgumentError("candidate is not linear in its scalar constants"))
     selected = method == :auto ? (linear && isnothing(lower_bounds) ? :linear : :nonlinear) : method
@@ -133,8 +152,6 @@ function refit(candidate::SymbolicCandidate, dataset::RegressionDataset;
     catch
         Inf
     end
-    fingerprint = model_structure(candidate).fingerprint
-
     if selected == :linear
         zero_parameters = zeros(length(original))
         baseline = _symbolic_predictions(candidate, zero_parameters, dataset.X)

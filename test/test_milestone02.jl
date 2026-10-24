@@ -30,6 +30,13 @@ end
     @test refined.structure_fingerprint == model_structure(candidate).fingerprint
     @test refined.objective < refined.original_objective
 
+    constant_free = symbolic_candidate("x", [:x])
+    fixed = refit(constant_free, RegressionDataset(reshape(x, :, 1), x;
+        features=[:x], target=:y, eos_ids=groups))
+    @test fixed.status == :success
+    @test fixed.method == :fixed
+    @test isempty(parameter_vector(fixed))
+
     nonlinear = symbolic_candidate("1.0*x^1.0", [:x])
     power_data = RegressionDataset(reshape(x, :, 1), @. 2.5*x^1.4;
         features=[:x], target=:y, eos_ids=groups)

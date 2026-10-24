@@ -27,6 +27,7 @@ research candidates; it never inserts them into the published catalogue automati
 **[Read the documentation](https://svretina.github.io/EmpiricalRelationsForge.jl/)**
 · [Getting started](https://svretina.github.io/EmpiricalRelationsForge.jl/getting_started/)
 · [Regression theory](https://svretina.github.io/EmpiricalRelationsForge.jl/regression/)
+· [Relation discovery](https://svretina.github.io/EmpiricalRelationsForge.jl/discovery/)
 · [Symbolic discovery](https://svretina.github.io/EmpiricalRelationsForge.jl/symbolic/)
 · [Vretinaris2020 benchmark](https://svretina.github.io/EmpiricalRelationsForge.jl/vretinaris2020/)
 
@@ -51,6 +52,10 @@ Julia 1.10 or later is supported.
   multiple starting points, solver metadata, and convergence diagnostics.
 - Equation discovery through SymbolicRegression.jl with configurable operators,
   complexity limits, weighting, random seeds, and preservation of the Pareto frontier.
+- Joint exploration of explanatory-variable subsets and polynomial, transformed,
+  named-basis, and symbolic model families through `RelationDiscoveryProblem`.
+- Ranked DataFrame leaderboards, accuracy--complexity Pareto fronts, observational-
+  accessibility filters, complete campaign artifacts, and leakage-free outer validation.
 - Random, grouped, and leave-one-EOS-out validation in which preprocessing and model
   coefficients are refitted independently inside every training fold.
 - Fixed-structure symbolic refitting with stable constant identities, automatic
@@ -79,6 +84,7 @@ measurements = DataFrame(
     simulation = 1:8,
     eos = repeat([:APR, :SLy, :DD2, :SFHo], inner=2),
     M_chirp = range(1.10, 1.30; length=8),
+    q = [0.78, 0.91, 0.84, 1.0, 0.76, 0.95, 0.87, 0.98],
     Lambda_tilde = range(900.0, 300.0; length=8),
 )
 measurements.f_peak = @. 2.1 + 0.7 * measurements.M_chirp -
@@ -87,11 +93,12 @@ measurements.f_peak = @. 2.1 + 0.7 * measurements.M_chirp -
 dataset = RegressionDataset(
     measurements;
     target=:f_peak,
-    features=[:M_chirp, :Lambda_tilde],
+    features=[:M_chirp, :q, :Lambda_tilde],
     row_id=:simulation,
     eos_id=:eos,
     units=Dict(
         :M_chirp => "M_sun",
+        :q => "1",
         :Lambda_tilde => "1",
         :f_peak => "kHz",
     ),
@@ -134,6 +141,43 @@ result = discover(dataset, search)
 leaderboard(result)
 candidate = best_model(result; criterion=:loss)
 ```
+
+To search over both variable subsets and mathematical structure, define a discovery
+problem. Targets are unrestricted, so the same workflow applies to forward frequency
+prediction and inverse inference of a radius or tidal quantity.
+
+```julia
+problem = RelationDiscoveryProblem(
+    target=:f_peak,
+    candidate_features=[:M_chirp, :q, :Lambda_tilde],
+    mandatory_features=[:M_chirp],
+    max_features=3,
+    transformations=[
+        FeatureTransformation(:Lambda_tilde, :inverse_sqrt;
+            name=:inverse_sqrt_Lambda),
+    ],
+    max_expression_complexity=20,
+)
+
+results = discover_relations(
+    problem,
+    dataset;
+    methods=[
+        PolynomialSearch(max_degree=3, standardize=true),
+        SymbolicSearch(problem; niterations=100, seed=42),
+    ],
+    validation=KFold(k=5, seed=42),
+)
+
+leaderboard(results)
+best = select_model(results; criterion=:validation_rmse)
+formula(best)
+```
+
+Use `validate_discovery` for a held-out performance estimate: it repeats feature and
+structure selection inside every outer training partition. The validation metric stored
+in a discovery leaderboard is an inner model-selection estimate, not an untouched test
+result.
 
 `best_model` is a numerical convenience, not a scientific model-selection rule.
 Candidate structure and hyperparameters should be chosen with training and validation

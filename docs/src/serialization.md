@@ -21,3 +21,16 @@ informative errors instead of silent reinterpretation.
 `dataset_fingerprint` hashes the numerical values and defining row/variable
 identities. Store it and the split/search/solver configuration as artifact metadata;
 the complete raw scientific database need not be embedded in each model.
+
+Complete relation-discovery campaigns use a directory artifact:
+
+```julia
+save_discovery("campaign", results)
+restored = load_discovery("campaign")
+```
+
+The manifest stores the `RelationDiscoveryProblem`, rankings, Pareto membership,
+candidate evaluations, exact folds, row identities, seed, configuration, provenance,
+and dataset hash. Each reconstructible candidate model is stored as a separate
+versioned artifact. Published predictors and arbitrary nonlinear Julia closures cannot
+be restored portably and are rejected rather than silently omitted.

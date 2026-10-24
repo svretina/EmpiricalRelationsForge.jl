@@ -11,5 +11,5 @@ using Test
     include("test_regression.jl")
     include("test_validation.jl")
     include("test_symbolic.jl")
-    Aqua.test_all(EmpiricalRelationsForge; ambiguities=false)
+    Aqua.test_all(EmpiricalRelationsForge)
 end

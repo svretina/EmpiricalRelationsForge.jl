@@ -1,5 +1,11 @@
 # EmpiricalRelationsForge.jl
 
+```@raw html
+<p style="text-align: center;">
+  <img src="assets/images/logo.png" alt="EmpiricalRelationsForge.jl — binary neutron-star empirical-relation fitting and discovery logo" style="width: min(100%, 720px); height: auto;">
+</p>
+```
+
 This package provides metadata-preserving data preparation, regression,
 equation discovery, and EOS-aware validation for scientific empirical
 relations. Its first application is binary-neutron-star postmerger research,

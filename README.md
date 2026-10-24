@@ -1,5 +1,9 @@
 # EmpiricalRelationsForge.jl
 
+<p align="center">
+  <img src="docs/src/assets/images/logo.png" alt="EmpiricalRelationsForge.jl — binary neutron-star empirical-relation fitting and discovery logo" width="720">
+</p>
+
 [![CI](https://github.com/svretina/EmpiricalRelationsForge.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/svretina/EmpiricalRelationsForge.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 [![GitHub release](https://img.shields.io/github/v/release/svretina/EmpiricalRelationsForge.jl)](https://github.com/svretina/EmpiricalRelationsForge.jl/releases/latest)
 [![Aqua QA](https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)

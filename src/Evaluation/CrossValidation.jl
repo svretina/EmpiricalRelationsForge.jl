@@ -29,15 +29,16 @@ struct LeaveOneGroupOut <: AbstractValidationStrategy
     end
 end
 
-struct ValidationReport{T<:AbstractFloat,S<:AbstractValidationStrategy}
+struct ValidationReport{T<:AbstractFloat,S<:AbstractValidationStrategy,
+                        R<:AbstractVector,G<:AbstractDict}
     strategy::S
     folds::Vector{DataSplit}
     fold_metrics::Vector{MetricReport{T}}
     aggregate_metrics::MetricReport{T}
     predictions::Vector{T}
     observed::Vector{T}
-    row_ids::Vector{Any}
-    group_metrics::Dict{Any,MetricReport{T}}
+    row_ids::R
+    group_metrics::G
 end
 
 _splits(strategy::RandomHoldout, dataset) = [random_split(dataset; test_fraction=strategy.test_fraction,
@@ -63,9 +64,9 @@ function validate(method::AbstractRegressionMethod, dataset::RegressionDataset;
     folds = _splits(strategy, dataset)
     predictions = eltype(dataset.y)[]
     observed = eltype(dataset.y)[]
-    row_ids = Any[]
+    row_ids = eltype(dataset.row_ids)[]
     reports = MetricReport{eltype(dataset.y)}[]
-    prediction_groups = Any[]
+    prediction_groups = eltype(dataset.eos_ids)[]
     for partition in folds
         training = subset(dataset, partition.train)
         testing = subset(dataset, partition.test)
@@ -78,9 +79,9 @@ function validate(method::AbstractRegressionMethod, dataset::RegressionDataset;
         push!(reports, metrics(fold_predictions, testing.y))
     end
     grouped = if any(ismissing, prediction_groups)
-        Dict{Any,MetricReport{eltype(dataset.y)}}()
+        Dict{eltype(dataset.eos_ids),MetricReport{eltype(dataset.y)}}()
     else
-        Dict{Any,MetricReport{eltype(dataset.y)}}(
+        Dict{eltype(dataset.eos_ids),MetricReport{eltype(dataset.y)}}(
             group => report for (group, report) in
             grouped_metrics(predictions, observed, prediction_groups))
     end

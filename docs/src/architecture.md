@@ -43,3 +43,13 @@ Symbolic discovery and fixed-structure assessment are deliberately distinct.
 `validate(candidate, data)` refits a structure in each fold. `nested_validate`
 also repeats discovery and inner selection inside each outer training partition,
 which is the appropriate protocol for assessing the complete discovery process.
+
+Numerical model and report types preserve concrete parameter types. Target
+transformations, fitted-model specifications, row identifiers, group identifiers,
+and validation outputs are carried as type parameters instead of being widened to
+`Any` or abstract fields. Relation-discovery campaigns may contain several model
+families and therefore use a heterogeneous candidate collection at the orchestration
+boundary; prediction and reporting functions place concrete, tested return-type
+barriers around that collection. The test suite uses `@inferred` on representative
+construction, fitting, prediction, validation, and discovery workflows to prevent
+inference regressions.

@@ -34,12 +34,12 @@ struct BasisSet
 end
 BasisSet(terms::PowerProductTerm...) = BasisSet(collect(terms))
 
-struct LinearBasisRegression <: AbstractRegressionMethod
+struct LinearBasisRegression{TT<:AbstractTargetTransformation} <: AbstractRegressionMethod
     basis::BasisSet
     weighting::Symbol
     standardize::Bool
     condition_warning::Float64
-    target_transform::AbstractTargetTransformation
+    target_transform::TT
     loss_space::Symbol
     solver::Symbol
 end
@@ -55,8 +55,9 @@ function LinearBasisRegression(basis::BasisSet; weighting::Symbol=:none,
                           target_transform, loss_space, solver)
 end
 
-struct FittedBasisModel{T<:AbstractFloat} <: AbstractFittedModel
-    method::LinearBasisRegression
+struct FittedBasisModel{T<:AbstractFloat,M<:LinearBasisRegression,
+                        R<:AbstractVector} <: AbstractFittedModel
+    method::M
     beta::Vector{T}
     feature_names::Vector{Symbol}
     target_name::Symbol
@@ -65,7 +66,7 @@ struct FittedBasisModel{T<:AbstractFloat} <: AbstractFittedModel
     rank::Int
     condition_number::T
     objective::T
-    training_row_ids::Vector{Any}
+    training_row_ids::R
 end
 
 function _basis_matrix(basis::BasisSet, X::AbstractMatrix, feature_names)

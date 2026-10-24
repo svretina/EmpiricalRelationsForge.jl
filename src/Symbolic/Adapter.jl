@@ -42,14 +42,14 @@ struct SymbolicCandidate{E,T<:AbstractFloat,O}
     options::O
 end
 
-struct SymbolicSearchResult{H,O,C<:SymbolicCandidate}
+struct SymbolicSearchResult{H,O,C<:SymbolicCandidate,R<:AbstractVector}
     hall_of_fame::H
     options::O
     candidates::Vector{C}
     feature_names::Vector{Symbol}
     target_name::Symbol
     units::Dict{Symbol,String}
-    training_row_ids::Vector{Any}
+    training_row_ids::R
     search_configuration::NamedTuple
     backend_version::VersionNumber
 end

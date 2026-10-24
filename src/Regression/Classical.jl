@@ -29,12 +29,12 @@ function _check_weighting(weighting::Symbol)
 end
 
 """Ordinary or diagonal weighted linear least squares."""
-struct LinearRegression <: AbstractRegressionMethod
+struct LinearRegression{TT<:AbstractTargetTransformation} <: AbstractRegressionMethod
     intercept::Bool
     weighting::Symbol
     standardize::Bool
     condition_warning::Float64
-    target_transform::AbstractTargetTransformation
+    target_transform::TT
     loss_space::Symbol
     solver::Symbol
 end
@@ -51,14 +51,14 @@ function LinearRegression(; intercept::Bool=true, weighting::Symbol=:none,
 end
 
 """Complete multivariate polynomial least squares through a chosen total degree."""
-struct PolynomialRegression <: AbstractRegressionMethod
+struct PolynomialRegression{TT<:AbstractTargetTransformation} <: AbstractRegressionMethod
     degree::Int
     intercept::Bool
     cross_terms::Bool
     weighting::Symbol
     standardize::Bool
     condition_warning::Float64
-    target_transform::AbstractTargetTransformation
+    target_transform::TT
     loss_space::Symbol
     solver::Symbol
 end
@@ -77,7 +77,8 @@ function PolynomialRegression(; degree::Integer, intercept::Bool=true,
 end
 
 """A fitted linear-in-coefficients polynomial model."""
-struct FittedPolynomialModel{T<:AbstractFloat,M<:AbstractRegressionMethod} <: AbstractFittedModel
+struct FittedPolynomialModel{T<:AbstractFloat,M<:AbstractRegressionMethod,
+                             TT<:AbstractTargetTransformation,R<:AbstractVector} <: AbstractFittedModel
     method::M
     beta::Vector{T}
     exponents::Matrix{Int}
@@ -89,8 +90,8 @@ struct FittedPolynomialModel{T<:AbstractFloat,M<:AbstractRegressionMethod} <: Ab
     transformations::Vector{TransformationRecord}
     rank::Int
     condition_number::T
-    training_row_ids::Vector{Any}
-    target_transform::AbstractTargetTransformation
+    training_row_ids::R
+    target_transform::TT
     loss_space::Symbol
     objective::T
 end

@@ -13,5 +13,6 @@ using Test
     include("test_symbolic.jl")
     include("test_milestone02.jl")
     include("test_discovery.jl")
+    include("test_type_stability.jl")
     Aqua.test_all(EmpiricalRelationsForge)
 end

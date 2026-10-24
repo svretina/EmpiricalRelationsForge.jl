@@ -35,8 +35,8 @@ end
 function _validation_from_folds(estimator, dataset, strategy, folds)
     predictions = eltype(dataset.y)[]
     observed = eltype(dataset.y)[]
-    row_ids = Any[]
-    groups = Any[]
+    row_ids = eltype(dataset.row_ids)[]
+    groups = eltype(dataset.eos_ids)[]
     reports = MetricReport{eltype(dataset.y)}[]
     for partition in folds
         training = subset(dataset, partition.train)
@@ -51,8 +51,9 @@ function _validation_from_folds(estimator, dataset, strategy, folds)
         append!(groups, testing.eos_ids)
         push!(reports, metrics(prediction, testing.y))
     end
-    group_reports = any(ismissing, groups) ? Dict{Any,MetricReport{eltype(dataset.y)}}() :
-        Dict{Any,MetricReport{eltype(dataset.y)}}(group => report for (group, report) in
+    group_reports = any(ismissing, groups) ?
+        Dict{eltype(dataset.eos_ids),MetricReport{eltype(dataset.y)}}() :
+        Dict{eltype(dataset.eos_ids),MetricReport{eltype(dataset.y)}}(group => report for (group, report) in
             grouped_metrics(predictions, observed, groups))
     ValidationReport(strategy, folds, reports, metrics(predictions, observed), predictions,
                      observed, row_ids, group_reports)
@@ -124,7 +125,8 @@ function select_model(report::ComparisonReport; policy=:minimum_rmse,
     throw(ArgumentError("unknown model-selection policy $policy"))
 end
 
-struct NestedValidationReport{S<:AbstractValidationStrategy,I<:AbstractValidationStrategy}
+struct NestedValidationReport{S<:AbstractValidationStrategy,I<:AbstractValidationStrategy,
+                              R<:AbstractVector}
     outer_strategy::S
     inner_strategy::I
     outer_folds::Vector{DataSplit}
@@ -134,7 +136,7 @@ struct NestedValidationReport{S<:AbstractValidationStrategy,I<:AbstractValidatio
     aggregate_metrics::MetricReport{Float64}
     predictions::Vector{Float64}
     observed::Vector{Float64}
-    row_ids::Vector{Any}
+    row_ids::R
 end
 
 """Nested symbolic discovery and fixed-structure selection without outer-fold leakage."""
@@ -148,7 +150,7 @@ function nested_validate(search::SymbolicSearch, dataset::RegressionDataset;
     fold_metrics = MetricReport{Float64}[]
     predictions = Float64[]
     observed = Float64[]
-    row_ids = Any[]
+    row_ids = eltype(dataset.row_ids)[]
     for partition in outer_folds
         training = subset(dataset, partition.train)
         testing = subset(dataset, partition.test)

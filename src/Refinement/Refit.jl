@@ -8,7 +8,8 @@ struct RefitDiagnostics
 end
 
 """A SymbolicRegression structure whose constants were independently refitted."""
-struct RefittedSymbolicModel{C,T<:AbstractFloat} <: AbstractFittedModel
+struct RefittedSymbolicModel{C,T<:AbstractFloat,TT<:AbstractTargetTransformation,
+                             R<:AbstractVector} <: AbstractFittedModel
     original::C
     candidate::C
     original_parameters::Vector{T}
@@ -19,13 +20,13 @@ struct RefittedSymbolicModel{C,T<:AbstractFloat} <: AbstractFittedModel
     status::Symbol
     solver_name::String
     weighting::Symbol
-    target_transform::AbstractTargetTransformation
+    target_transform::TT
     loss_space::Symbol
     lower_bounds::Union{Nothing,Vector{T}}
     upper_bounds::Union{Nothing,Vector{T}}
     diagnostics::RefitDiagnostics
     structure_fingerprint::String
-    training_row_ids::Vector{Any}
+    training_row_ids::R
 end
 
 parameter_names(model::RefittedSymbolicModel) = parameter_names(model.candidate)

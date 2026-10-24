@@ -12,16 +12,18 @@ An observations-by-features numerical dataset with scientific provenance. Matrix
 orientation is deliberately fixed: rows are observations and columns follow
 `feature_names`.
 """
-struct RegressionDataset{T<:AbstractFloat}
+struct RegressionDataset{T<:AbstractFloat,
+                         R<:AbstractVector,E<:AbstractVector,
+                         S<:AbstractVector,P<:AbstractVector}
     X::Matrix{T}
     y::Vector{T}
     feature_names::Vector{Symbol}
     target_name::Symbol
     units::Dict{Symbol,String}
-    row_ids::Vector{Any}
-    eos_ids::Vector{Any}
-    simulation_ids::Vector{Any}
-    source_papers::Vector{Any}
+    row_ids::R
+    eos_ids::E
+    simulation_ids::S
+    source_papers::P
     observation_kinds::Vector{Symbol}
     uncertainties::Union{Nothing,Vector{T}}
     uncertainty_kind::Symbol
@@ -49,11 +51,11 @@ function RegressionDataset(
     transformations=TransformationRecord[],
 )
     T = promote_type(float(eltype(X)), float(eltype(y)))
-    dataset = RegressionDataset{T}(
+    dataset = RegressionDataset(
         Matrix{T}(X), Vector{T}(y), Symbol.(features), Symbol(target),
         Dict{Symbol,String}(Symbol(k) => string(v) for (k, v) in pairs(units)),
-        Any[row_ids...], Any[eos_ids...], Any[simulation_ids...],
-        Any[source_papers...], Symbol[observation_kinds...],
+        collect(row_ids), collect(eos_ids), collect(simulation_ids),
+        collect(source_papers), Symbol[observation_kinds...],
         isnothing(uncertainties) ? nothing : Vector{T}(uncertainties),
         uncertainty_kind,
         isnothing(weights) ? nothing : Vector{T}(weights),

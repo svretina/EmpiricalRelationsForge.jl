@@ -1,14 +1,14 @@
-struct CandidateEvaluation
+struct CandidateEvaluation{R<:AbstractVector}
     training::MetricReport{Float64}
     validation::Union{Nothing,MetricReport{Float64}}
     folds::Vector{DataSplit}
     predictions::Vector{Float64}
     observed::Vector{Float64}
-    row_ids::Vector{Any}
+    row_ids::R
 end
 
 """One fitted relation produced by a discovery campaign."""
-struct RelationCandidate{M} <: AbstractFittedModel
+struct RelationCandidate{M,E<:CandidateEvaluation} <: AbstractFittedModel
     id::String
     model::M
     family::Symbol
@@ -17,7 +17,7 @@ struct RelationCandidate{M} <: AbstractFittedModel
     source_features::Vector{Symbol}
     transformations::Vector{FeatureTransformation}
     complexity::Int
-    evaluation::CandidateEvaluation
+    evaluation::E
     score::Float64
     conditioning::Float64
     physical_validity::Symbol
@@ -26,7 +26,7 @@ struct RelationCandidate{M} <: AbstractFittedModel
     provenance::Dict{Symbol,Any}
 end
 
-struct RelationDiscoveryResult
+struct RelationDiscoveryResult{R<:AbstractVector}
     problem::RelationDiscoveryProblem
     candidates::Vector{RelationCandidate}
     pareto_indices::Vector{Int}
@@ -34,19 +34,19 @@ struct RelationDiscoveryResult
     validation_strategy::String
     seed::Int
     dataset_hash::String
-    training_row_ids::Vector{Any}
+    training_row_ids::R
     configuration::Dict{Symbol,Any}
 end
 
 """Outer-fold assessment with the complete discovery procedure repeated per fold."""
-struct DiscoveryValidationReport{S<:AbstractValidationStrategy}
+struct DiscoveryValidationReport{S<:AbstractValidationStrategy,R<:AbstractVector}
     strategy::S
     folds::Vector{DataSplit}
     fold_metrics::Vector{MetricReport{Float64}}
     aggregate_metrics::MetricReport{Float64}
     predictions::Vector{Float64}
     observed::Vector{Float64}
-    row_ids::Vector{Any}
+    row_ids::R
     selected_formulas::Vector{String}
     selected_features::Vector{Vector{Symbol}}
 end
@@ -69,12 +69,12 @@ function _source_matrix(source_features, transforms, X, input_names)
     hcat(columns...)
 end
 
-predict(candidate::RelationCandidate, data::RegressionDataset) = begin
+predict(candidate::RelationCandidate, data::RegressionDataset)::Vector{Float64} = begin
     candidate.model.target_name == data.target_name || throw(ArgumentError("target identity differs"))
     predict(candidate.model, _source_matrix(candidate.source_features, candidate.transformations,
         data.X, data.feature_names))
 end
-function predict(candidate::RelationCandidate, X::AbstractMatrix)
+function predict(candidate::RelationCandidate, X::AbstractMatrix)::Vector{Float64}
     size(X, 2) == length(candidate.input_features) || throw(DimensionMismatch(
         "matrix prediction requires columns in input-feature order"))
     predict(candidate.model, _source_matrix(candidate.source_features,
@@ -190,7 +190,8 @@ end
 
 function _evaluation(model, data, validation; estimator=model)
     training = _float_metrics(metrics(model, data))
-    isnothing(validation) && return CandidateEvaluation(training, nothing, DataSplit[], Float64[], Float64[], Any[])
+    isnothing(validation) && return CandidateEvaluation(training, nothing, DataSplit[],
+        Float64[], Float64[], eltype(data.row_ids)[])
     folds = _splits(validation, data)
     report = _validation_from_folds(estimator, data, validation, folds)
     converted = _float_metrics(report.aggregate_metrics)
@@ -403,7 +404,7 @@ function discover_relations(problem::RelationDiscoveryProblem, dataset::Regressi
     sort!(candidates; by=candidate -> candidate.score)
     RelationDiscoveryResult(problem, candidates, pareto_frontier(candidates), subset_strategy,
         string(typeof(chosen_validation)), Int(seed), dataset_fingerprint(dataset),
-        copy(dataset.row_ids), Dict(:methods=>string.(typeof.(methods))))
+        copy(dataset.row_ids), Dict{Symbol,Any}(:methods=>string.(typeof.(methods))))
 end
 
 """
@@ -420,7 +421,7 @@ function validate_discovery(problem::RelationDiscoveryProblem, dataset::Regressi
     folds = _splits(outer, dataset)
     predictions = Float64[]
     observed = Float64[]
-    row_ids = Any[]
+    row_ids = eltype(dataset.row_ids)[]
     fold_reports = MetricReport{Float64}[]
     selected_formulas = String[]
     selected_features = Vector{Symbol}[]
@@ -455,7 +456,8 @@ function _candidate_group_key(candidate::RelationCandidate)
 end
 
 """Return a sortable candidate DataFrame; safely equivalent structures are grouped by default."""
-function leaderboard(result::RelationDiscoveryResult; pareto::Bool=false, unique::Bool=true)
+function leaderboard(result::RelationDiscoveryResult; pareto::Bool=false,
+                     unique::Bool=true)::DataFrame
     indices = pareto ? result.pareto_indices : collect(eachindex(result.candidates))
     if unique
         seen = Set{String}()

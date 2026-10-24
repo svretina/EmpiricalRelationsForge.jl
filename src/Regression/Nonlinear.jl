@@ -1,10 +1,10 @@
 """Scientific specification for nonlinear-in-parameter least squares."""
-struct NonlinearModelSpec{F,A,K<:NamedTuple} <: AbstractRegressionMethod
+struct NonlinearModelSpec{F,A,K<:NamedTuple,TT<:AbstractTargetTransformation} <: AbstractRegressionMethod
     model::F
     parameter_names::Vector{Symbol}
     initial_guesses::Vector{Vector{Float64}}
     expression::String
-    target_transform::AbstractTargetTransformation
+    target_transform::TT
     loss_space::Symbol
     weighting::Symbol
     lower_bounds::Union{Nothing,Vector{Float64}}
@@ -40,7 +40,7 @@ function NonlinearModelSpec(model, parameter_names, initial_guess;
                        loss_space, weighting, lb, ub, pscale, algorithm, solver_options)
 end
 
-struct FittedNonlinearModel{T<:AbstractFloat,S} <: AbstractFittedModel
+struct FittedNonlinearModel{T<:AbstractFloat,S,R<:AbstractVector} <: AbstractFittedModel
     specification::S
     parameters::Vector{T}
     feature_names::Vector{Symbol}
@@ -54,10 +54,23 @@ struct FittedNonlinearModel{T<:AbstractFloat,S} <: AbstractFittedModel
     attempted_initial_guesses::Int
     solver_name::String
     solver_version::VersionNumber
-    training_row_ids::Vector{Any}
+    training_row_ids::R
+end
+
+function _solve_nonlinear(specification, residual, guess, pscale)
+    scaled_guess = guess ./ pscale
+    problem = if isnothing(specification.lower_bounds)
+        NonlinearSolve.NonlinearLeastSquaresProblem(residual, scaled_guess)
+    else
+        NonlinearSolve.NonlinearLeastSquaresProblem(
+            residual, scaled_guess; lb=specification.lower_bounds ./ pscale,
+            ub=specification.upper_bounds ./ pscale)
+    end
+    NonlinearSolve.solve(problem, specification.algorithm; specification.solver_options...)
 end
 
 function fit(dataset::RegressionDataset, specification::NonlinearModelSpec)
+    T = eltype(dataset.y)
     scale = _target_scale(specification.target_transform, dataset.X, dataset.feature_names)
     transformed_y = scale .* dataset.y
     weights = _fit_weights(dataset, specification.weighting)
@@ -66,28 +79,26 @@ function fit(dataset::RegressionDataset, specification::NonlinearModelSpec)
     pscale = isnothing(specification.parameter_scale) ? ones(length(specification.parameter_names)) : specification.parameter_scale
     residual = (scaled_parameters, _) -> residual_scale .* (
         specification.model(dataset.X, scaled_parameters .* pscale) .- transformed_y)
-    solutions = Any[]
-    for guess in specification.initial_guesses
-        scaled_guess = guess ./ pscale
-        problem = if isnothing(specification.lower_bounds)
-            NonlinearSolve.NonlinearLeastSquaresProblem(residual, scaled_guess)
-        else
-            NonlinearSolve.NonlinearLeastSquaresProblem(
-                residual, scaled_guess; lb=specification.lower_bounds ./ pscale,
-                ub=specification.upper_bounds ./ pscale)
+    guesses = specification.initial_guesses
+    solution = _solve_nonlinear(specification, residual, first(guesses), pscale)
+    objective = sum(abs2, solution.resid)
+    for guess in Iterators.drop(guesses, 1)
+        trial = _solve_nonlinear(specification, residual, guess, pscale)
+        trial_objective = sum(abs2, trial.resid)
+        if trial_objective < objective
+            solution = trial
+            objective = trial_objective
         end
-        push!(solutions, NonlinearSolve.solve(problem, specification.algorithm;
-                                              specification.solver_options...))
     end
-    objectives = [sum(abs2, solution.resid) for solution in solutions]
-    solution = solutions[argmin(objectives)]
     converged = NonlinearSolve.SciMLBase.successful_retcode(solution)
     !converged && @warn "nonlinear least-squares solver did not report success" retcode=solution.retcode
-    FittedNonlinearModel(
-        specification, collect(solution.u .* pscale), copy(dataset.feature_names), dataset.target_name,
-        copy(dataset.units), minimum(objectives), norm(solution.resid), string(solution.retcode),
-        solution.stats.nsteps, converged, length(solutions), string(typeof(specification.algorithm)),
-        pkgversion(NonlinearSolve), copy(dataset.row_ids),
+    parameters = Vector{T}(solution.u .* pscale)
+    row_ids = copy(dataset.row_ids)
+    FittedNonlinearModel{T,typeof(specification),typeof(row_ids)}(
+        specification, parameters, copy(dataset.feature_names), dataset.target_name,
+        copy(dataset.units), convert(T, objective), convert(T, norm(solution.resid)), string(solution.retcode),
+        solution.stats.nsteps, converged, length(guesses), string(typeof(specification.algorithm)),
+        pkgversion(NonlinearSolve), row_ids,
     )
 end
 

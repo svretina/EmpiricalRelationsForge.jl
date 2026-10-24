@@ -40,10 +40,10 @@ function _problem_payload(problem::RelationDiscoveryProblem)
 end
 
 function _load_problem(payload)
-    transformations = [FeatureTransformation(Symbol(t["source"]), Symbol(t["kind"]);
+    transformations = FeatureTransformation[FeatureTransformation(Symbol(t["source"]), Symbol(t["kind"]);
         name=Symbol(t["name"]), parameter=Float64(t["parameter"]))
         for t in payload["transformations"]]
-    variables = [VariableDescriptor(Symbol(v["name"]); role=Symbol(v["role"]),
+    variables = VariableDescriptor[VariableDescriptor(Symbol(v["name"]); role=Symbol(v["role"]),
         accessible=Bool(v["accessible"]), description=String(v["description"]))
         for v in payload["variables"]]
     symbols(values) = Symbol[Symbol(value) for value in values]
@@ -131,7 +131,7 @@ function load_discovery(path::AbstractString)
     candidates = RelationCandidate[]
     for candidate in payload["candidates"]
         model = load_model(joinpath(path, candidate["model"]))
-        transformations = [FeatureTransformation(Symbol(t["source"]), Symbol(t["kind"]);
+        transformations = FeatureTransformation[FeatureTransformation(Symbol(t["source"]), Symbol(t["kind"]);
             name=Symbol(t["name"]), parameter=Float64(t["parameter"]))
             for t in candidate["transformations"]]
         push!(candidates, RelationCandidate(String(candidate["id"]), model,

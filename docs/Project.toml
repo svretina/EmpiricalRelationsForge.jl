@@ -3,7 +3,7 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 EmpiricalRelationsForge = "e9dd7718-9e50-4408-8d7e-593a1f0092d9"
 
 [sources]
-EmpiricalRelationsForge = {path = "/home/svretina/Codes/EmpiricalRelationsForge.jl"}
+EmpiricalRelationsForge = {path = ".."}
 
 [compat]
 Documenter = "1"

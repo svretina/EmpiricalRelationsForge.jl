@@ -5,6 +5,7 @@ struct SymbolicSearch{O,K<:NamedTuple}
     parallelism::Symbol
     seed::Union{Nothing,Int}
     weighting::Symbol
+    dimensional_constraints::Bool
     backend_kwargs::K
 end
 
@@ -12,6 +13,7 @@ function SymbolicSearch(; binary_operators=[+, -, *, /], unary_operators=[],
                         max_complexity::Integer=20, niterations::Integer=100,
                         parallelism::Symbol=:multithreading, seed::Union{Nothing,Integer}=nothing,
                         weighting::Symbol=:none, options=nothing,
+                        dimensional_constraints::Bool=false,
                         backend_options::NamedTuple=(;), backend_kwargs::NamedTuple=(;))
     niterations >= 1 || throw(ArgumentError("niterations must be positive"))
     max_complexity >= 1 || throw(ArgumentError("max_complexity must be positive"))
@@ -27,7 +29,8 @@ function SymbolicSearch(; binary_operators=[+, -, *, /], unary_operators=[],
         options
     end
     SymbolicSearch(configured, Int(niterations), parallelism,
-                   isnothing(seed) ? nothing : Int(seed), weighting, backend_kwargs)
+                   isnothing(seed) ? nothing : Int(seed), weighting,
+                   dimensional_constraints, backend_kwargs)
 end
 
 struct SymbolicCandidate{E,T<:AbstractFloat,O}
@@ -51,12 +54,29 @@ struct SymbolicSearchResult{H,O,C<:SymbolicCandidate}
     backend_version::VersionNumber
 end
 
+function _backend_unit(unit::AbstractString)
+    unit in ("1", "dimensionless", "") && return DynamicQuantities.Quantity(1.0)
+    unit in ("M_sun", "kg") && return DynamicQuantities.Quantity(1.0; mass=1)
+    unit in ("km", "m") && return DynamicQuantities.Quantity(1.0; length=1)
+    unit in ("kHz", "Hz", "s^-1") && return DynamicQuantities.Quantity(1.0; time=-1)
+    throw(ArgumentError("no symbolic dimension mapping is registered for unit '$unit'; " *
+                        "supply backend_kwargs=(X_units=..., y_units=...)"))
+end
+
 function discover(dataset::RegressionDataset, search::SymbolicSearch)
     weights = _fit_weights(dataset, search.weighting)
     base = (; niterations=search.niterations, options=search.options,
             variable_names=string.(dataset.feature_names), parallelism=search.parallelism,
             weights, verbosity=0)
-    kwargs = merge(base, search.backend_kwargs)
+    dimensional = if search.dimensional_constraints
+        all(haskey(dataset.units, name) for name in [dataset.feature_names; dataset.target_name]) ||
+            throw(ArgumentError("dimensional symbolic search requires units for every feature and target"))
+        (; X_units=[_backend_unit(dataset.units[name]) for name in dataset.feature_names],
+           y_units=_backend_unit(dataset.units[dataset.target_name]))
+    else
+        (;)
+    end
+    kwargs = merge(base, dimensional, search.backend_kwargs)
     hall = SymbolicRegression.equation_search(permutedims(dataset.X), dataset.y; kwargs...)
     frontier = SymbolicRegression.calculate_pareto_frontier(hall)
     candidates = [SymbolicCandidate(
@@ -68,7 +88,8 @@ function discover(dataset::RegressionDataset, search::SymbolicSearch)
         hall, search.options, candidates, copy(dataset.feature_names), dataset.target_name,
         copy(dataset.units), copy(dataset.row_ids),
         (; niterations=search.niterations, parallelism=search.parallelism,
-           seed=search.seed, weighting=search.weighting),
+           seed=search.seed, weighting=search.weighting,
+           dimensional_constraints=search.dimensional_constraints),
         pkgversion(SymbolicRegression),
     )
 end

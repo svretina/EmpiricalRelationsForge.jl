@@ -53,6 +53,16 @@ Julia 1.10 or later is supported.
   complexity limits, weighting, random seeds, and preservation of the Pareto frontier.
 - Random, grouped, and leave-one-EOS-out validation in which preprocessing and model
   coefficients are refitted independently inside every training fold.
+- Fixed-structure symbolic refitting with stable constant identities, automatic
+  linear/nonlinear solver selection, bounds, scaling, and identifiability diagnostics.
+- Fair multi-backend comparison on shared folds and nested grouped validation for
+  symbolic structure selection without access to outer validation targets.
+- Jacobian covariance, parameter-induced prediction uncertainty, and whole-group
+  bootstrap intervals conditional on a fixed mathematical structure.
+- Physical normalization, conservative dimensional checks, native dimensional search
+  constraints, versioned model artifacts, and conservative symbolic deduplication.
+- Read-only published-relation adapters and review-oriented candidate exports; candidate
+  discovery never changes the companion catalogue.
 - Global and group-resolved error metrics, design rank and condition diagnostics, and
   auditable model metadata export.
 
@@ -135,7 +145,7 @@ Observation weights are interpreted explicitly: direct weights minimize
 `sum(w_i r_i^2)`, while inverse-variance weighting uses `w_i = 1/sigma_i^2`. Target
 transformations record whether the optimized residuals belong to transformed or
 original physical space. Units and provenance are retained as metadata; dimensional
-consistency is not yet enforced automatically.
+consistency can be checked conservatively and can be enforced during symbolic search.
 
 Group-aware validation is essential when simulations share an EOS, numerical sequence,
 or other correlated origin. `LeaveOneEOSOut()` holds out a complete EOS and repeats all

@@ -9,6 +9,7 @@ struct NonlinearModelSpec{F,A,K<:NamedTuple} <: AbstractRegressionMethod
     weighting::Symbol
     lower_bounds::Union{Nothing,Vector{Float64}}
     upper_bounds::Union{Nothing,Vector{Float64}}
+    parameter_scale::Union{Nothing,Vector{Float64}}
     algorithm::A
     solver_options::K
 end
@@ -18,6 +19,7 @@ function NonlinearModelSpec(model, parameter_names, initial_guess;
                             target_transform::AbstractTargetTransformation=IdentityTarget(),
                             loss_space::Symbol=:original, weighting::Symbol=:none,
                             lower_bounds=nothing, upper_bounds=nothing,
+                            parameter_scale=nothing,
                             algorithm=NonlinearSolve.FastShortcutNLLSPolyalg(),
                             solver_options::NamedTuple=(;))
     guesses = initial_guess isa AbstractVector{<:Real} ? [Float64.(initial_guess)] :
@@ -31,8 +33,11 @@ function NonlinearModelSpec(model, parameter_names, initial_guess;
     ub = isnothing(upper_bounds) ? nothing : Float64.(upper_bounds)
     xor(isnothing(lb), isnothing(ub)) && throw(ArgumentError("both lower and upper bounds must be supplied"))
     !isnothing(lb) && (length(lb) == nparameters == length(ub) || throw(DimensionMismatch("bounds must match parameters")))
+    pscale = isnothing(parameter_scale) ? nothing : Float64.(parameter_scale)
+    !isnothing(pscale) && (length(pscale) == nparameters || throw(DimensionMismatch("parameter_scale must match parameters")))
+    !isnothing(pscale) && all(>(0), pscale) || isnothing(pscale) || throw(ArgumentError("parameter_scale must be positive"))
     NonlinearModelSpec(model, Symbol.(parameter_names), guesses, String(expression), target_transform,
-                       loss_space, weighting, lb, ub, algorithm, solver_options)
+                       loss_space, weighting, lb, ub, pscale, algorithm, solver_options)
 end
 
 struct FittedNonlinearModel{T<:AbstractFloat,S} <: AbstractFittedModel
@@ -58,15 +63,18 @@ function fit(dataset::RegressionDataset, specification::NonlinearModelSpec)
     weights = _fit_weights(dataset, specification.weighting)
     rootweights = isnothing(weights) ? ones(eltype(dataset.y), length(dataset)) : sqrt.(weights)
     residual_scale = specification.loss_space == :original ? rootweights ./ scale : rootweights
-    residual = (parameters, _) -> residual_scale .* (
-        specification.model(dataset.X, parameters) .- transformed_y)
+    pscale = isnothing(specification.parameter_scale) ? ones(length(specification.parameter_names)) : specification.parameter_scale
+    residual = (scaled_parameters, _) -> residual_scale .* (
+        specification.model(dataset.X, scaled_parameters .* pscale) .- transformed_y)
     solutions = Any[]
     for guess in specification.initial_guesses
+        scaled_guess = guess ./ pscale
         problem = if isnothing(specification.lower_bounds)
-            NonlinearSolve.NonlinearLeastSquaresProblem(residual, guess)
+            NonlinearSolve.NonlinearLeastSquaresProblem(residual, scaled_guess)
         else
             NonlinearSolve.NonlinearLeastSquaresProblem(
-                residual, guess; lb=specification.lower_bounds, ub=specification.upper_bounds)
+                residual, scaled_guess; lb=specification.lower_bounds ./ pscale,
+                ub=specification.upper_bounds ./ pscale)
         end
         push!(solutions, NonlinearSolve.solve(problem, specification.algorithm;
                                               specification.solver_options...))
@@ -76,7 +84,7 @@ function fit(dataset::RegressionDataset, specification::NonlinearModelSpec)
     converged = NonlinearSolve.SciMLBase.successful_retcode(solution)
     !converged && @warn "nonlinear least-squares solver did not report success" retcode=solution.retcode
     FittedNonlinearModel(
-        specification, collect(solution.u), copy(dataset.feature_names), dataset.target_name,
+        specification, collect(solution.u .* pscale), copy(dataset.feature_names), dataset.target_name,
         copy(dataset.units), minimum(objectives), norm(solution.resid), string(solution.retcode),
         solution.stats.nsteps, converged, length(solutions), string(typeof(specification.algorithm)),
         pkgversion(NonlinearSolve), copy(dataset.row_ids),

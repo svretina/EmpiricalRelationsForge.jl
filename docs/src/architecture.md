@@ -26,3 +26,14 @@ The fitting layer separates scientific specification from numerical solution:
 Cross-validation receives a regression method rather than a pre-fitted model.
 Every fold therefore learns standardization and coefficients from its training
 partition only.
+
+The refinement layer separates an expression tree from its ordered constants.
+`ModelStructure` supplies a stable structural fingerprint, while
+`parameter_vector` and `with_parameters` operate on numerical values without
+parsing formula strings. This shared interface supports covariance propagation,
+fixed-structure bootstrap, model artifacts, and comparison experiments.
+
+Symbolic discovery and fixed-structure assessment are deliberately distinct.
+`validate(candidate, data)` refits a structure in each fold. `nested_validate`
+also repeats discovery and inner selection inside each outer training partition,
+which is the appropriate protocol for assessing the complete discovery process.
